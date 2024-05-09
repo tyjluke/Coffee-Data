@@ -1,0 +1,113 @@
+------ ok i wanna find the net profit from all costs in the dataset
+----- second i wanna find the projected profit for January the next year 
+----- thrid i wanna find out how much the store would profit to use AI insead of Labor 
+
+create table coffee_sales (date date, catagory text, forcasted_amount integer, actual_amout integer)
+
+select * from coffee_sales
+
+
+select date, category, actual_amount
+from coffee_sales 
+
+
+-- finding the actual and forcasted amount of sales for coffee and food
+
+select sum(forcasted_amount) as forcasted_Coffee_sales, 
+sum(actual_amount) as actual_coffee_sales
+from coffee_sales
+where category = 'Coffee Sales'
+
+select sum(forcasted_amount) as forcasted_Food_sales, 
+sum(actual_amount) as actual_Food_sales
+from coffee_sales
+where category = 'Food Sales'
+
+
+
+--here i found the total cost of rent, utilities, ingredients, and labor from sales
+
+SELECT 
+    SUM(CASE WHEN category = 'Rent' THEN actual_amount ELSE 0 END) AS rent_cost,
+    SUM(CASE WHEN category = 'Utilities' THEN actual_amount ELSE 0 END) AS utilities_cost,
+    SUM(CASE WHEN category = 'Labor' THEN actual_amount ELSE 0 END) AS labor_cost,
+	SUM(actual_amount) AS total_cost
+FROM coffee_sales;
+
+
+--here i am taking all sales - our costs to get our net profit from sales.
+
+SELECT 
+    (SUM(CASE WHEN category IN ('Coffee Sales', 'Food Sales') THEN actual_amount ELSE 0 END)
+    - SUM(CASE WHEN category IN ('Rent', 'Utilities', 'Labor') THEN actual_amount ELSE 0 END)) AS net_profit
+FROM coffee_sales;
+
+-- here i find the total sales for coffee and food together
+
+SELECT 
+    SUM(CASE WHEN category IN ('Coffee Sales', 'Food Sales') THEN actual_amount ELSE 0 END) AS total_sales_available_year
+FROM coffee_sales;
+
+
+-- Calculated total sales for november 2023 for 'Food Sales' and 'Coffee Sales'
+SELECT 
+    SUM(actual_amount) AS total_sales_novemnber_2023
+FROM coffee_sales
+WHERE date >= '2023-11-01' AND date <= '2023-11-30'
+AND category IN ('Food Sales', 'Coffee Sales');
+
+-- Calculated total sales for december 2023 
+ 
+SELECT 
+    SUM(actual_amount) AS total_sales_december_2023
+FROM coffee_sales
+WHERE date >= '2023-12-01' AND date <= '2023-12-31'
+AND category IN ('Food Sales', 'Coffee Sales');
+
+-- Calculated the growth rate between November and December
+-- Using subqueries to reference the total sales aliases
+SELECT 
+    (total_sales_december_2023 - total_sales_november_2023) / total_sales_november_2023 AS growth_rate
+FROM (
+    -- Subquery for total sales for December 2023
+    SELECT 
+        SUM(actual_amount) AS total_sales_december_2023
+    FROM coffee_sales
+    WHERE date >= '2023-12-01' AND date <= '2023-12-31'
+    AND category IN ('Food Sales', 'Coffee Sales')
+) AS december_sales,
+(
+    -- Subquery for total sales for November 2023
+    SELECT 
+        SUM(actual_amount) AS total_sales_november_2023
+    FROM coffee_sales
+    WHERE date >= '2023-11-01' AND date <= '2023-11-30'
+    AND category IN ('Food Sales', 'Coffee Sales')
+) AS november_sales;
+
+-- Project sales for January 2024 based on the estimated growth rate
+-- the projected number of growth from the months plugged in (3.58)
+ SELECT 
+     total_sales_december_2023 * (1 + 3.58) AS projected_sales_january_2024
+
+SELECT ROUND(34670 * (1 + 3.58 / 100), 2) AS projected_sales_january_2024;
+
+
+ -- ok lets assume that AI is free of all cost related to sales data.
+ --if i want to find hwo much the store would save and or make more in profit.
+ -- i will remove labor costs and find how much i would save and therfore profit.
+  
+SELECT 
+    (
+        SUM(CASE WHEN category IN ('Coffee Sales', 'Food Sales') THEN actual_amount ELSE 0 END)
+        - SUM(CASE WHEN category IN ('Rent', 'Utilities') THEN actual_amount ELSE 0 END)
+    ) AS net_profit_without_labor,
+    (
+        SUM(CASE WHEN category IN ('Coffee Sales', 'Food Sales') THEN actual_amount ELSE 0 END)
+        - SUM(CASE WHEN category IN ('Rent', 'Utilities', 'Labor') THEN actual_amount ELSE 0 END)
+    ) AS net_profit_with_labor,
+    (
+        SUM(CASE WHEN category IN ('Rent', 'Utilities', 'Labor') THEN actual_amount ELSE 0 END)
+        - SUM(CASE WHEN category IN ('Rent', 'Utilities') THEN actual_amount ELSE 0 END)
+    ) AS labor_saving
+FROM coffee_sales;
